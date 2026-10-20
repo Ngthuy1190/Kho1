@@ -150,3 +150,14 @@ Người dùng phản hồi cho AI-1; quy trình quay lại GATE phù hợp. **K
 - **Audit:** phát hiện còn tồn tại, ảnh hưởng, cách tái hiện.
 - **Hướng dẫn UAT TradingView:** bước tối thiểu để người dùng xác minh khi Codex không thể tự chạy TradingView.
 - Chỉ người dùng có quyền nghiệm thu cuối. Không yêu cầu họ xử lý lỗi code thay cho AI-3.
+
+## 8. QUẢN LÝ PHIÊN BẢN BẮT BUỘC CHO MỌI LẦN SỬA MÃ
+
+- Mỗi lần thay đổi bất kỳ mã nguồn Pine Script nào (kể cả sửa một lỗi cú pháp, tối ưu hoặc thay đổi hiển thị), phải **tăng số phiên bản** trước khi bàn giao; không được bàn giao hai bản mã khác nhau dưới cùng một phiên bản.
+- Dùng định dạng `MAJOR.MINOR.PATCH` (ví dụ `1.0.0` → `1.0.1`); tăng PATCH khi sửa lỗi/điều chỉnh kỹ thuật không đổi hành vi, MINOR khi thêm tính năng tương thích đã được duyệt, MAJOR khi thay đổi lớn đã được người dùng phê duyệt. Trường hợp nhánh thử nghiệm có thể thêm hậu tố `-rc.1`, `-rc.2`, nhưng mỗi bản phát hành phải có định danh duy nhất.
+- Đồng bộ cùng số phiên bản ở tên chỉ báo trong `indicator()` hoặc `strategy()`, phần đầu mã, tên file bàn giao và báo cáo. Giữ tên sản phẩm ổn định, không nhầm phiên bản chỉ báo với phiên bản Pine (`//@version=6` luôn giữ nguyên).
+- Mã nguồn chính được quản lý trong Git; mỗi bản bàn giao phải có commit SHA và nhật ký thay đổi ngắn: phiên bản cũ → mới, file sửa, nguyên nhân, tác động, trạng thái COMPILE/RUNTIME/VISUAL. Đề xuất lưu nhật ký `CHANGELOG.md`, có thể tạo khi bắt đầu sửa mã; không tạo lịch sử kiểm thử giả.
+- Trước khi nâng phiên bản, kiểm tra phiên bản cao nhất có thực trong repository, không tự đặt lại thành V1.0 nếu dự án đã có phiên bản; không tạo số phiên bản trùng, kể cả khi quay lại sửa từ bản cũ. Khi chưa rõ quy ước phiên bản hiện tại, AI-1 phải xác định và công bố cách ánh xạ trước khi thay đổi.
+- Không bắt buộc tạo bản sao mã nguồn cho từng sửa đổi vì Git giữ lịch sử; nếu người dùng cần các file .pine riêng để so sánh, tạo thêm bản snapshot có tên phiên bản mà không làm mất file chính.
+- Không gắn nhãn `STABLE` hoặc `RELEASE` trước khi kiểm chứng biên dịch trên TradingView và người dùng nghiệm thu. Bản chưa xác minh phải ghi `UNVERIFIED` hoặc `RC` trong báo cáo.
+- Quy định này áp dụng tự động cho mọi nhiệm vụ sau; AI-1 chịu trách nhiệm kiểm tra phiên bản trước khi báo cáo. Không cần người dùng nhắc lại.
