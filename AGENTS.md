@@ -111,3 +111,42 @@ Người dùng phản hồi cho AI-1; quy trình quay lại GATE phù hợp. **K
 - Nếu có `AGENTS.md` cấp thư mục con, đọc bổ sung hướng dẫn tương ứng; báo cáo điểm mâu thuẫn nếu có.
 - Khi bắt đầu tác vụ, xác nhận ngắn gọn: **“Đã đọc AGENTS.md; áp dụng quy trình 4 vai trò AI, người dùng nghiệm thu cuối.”** Chỉ nói như vậy nếu thực sự đã đọc file.
 - Không cần người dùng nhắc lại quy tắc này ở từng yêu cầu; nếu không thể đọc file trong phiên làm việc, phải nói rõ và yêu cầu truy cập tài liệu thay vì giả vờ đã đọc.
+
+## 7. PINE SCRIPT QUALITY GATE — BẮT BUỘC CHO MỌI THAY ĐỔI .pine
+
+### 7.1. Nguyên tắc không bàn giao lỗi chưa kiểm chứng
+- AI-3 chịu trách nhiệm chất lượng cú pháp và tương thích Pine Script v6; AI-4 phải rà độc lập bản mã hoàn chỉnh sau sửa, không chỉ đọc diff.
+- Không được tự nhận đã biên dịch thành công nếu chưa thực sự chạy trên bộ biên dịch Pine của TradingView. Phân biệt rõ `STATIC REVIEW PASS`, `COMPILE VERIFIED ON TRADINGVIEW`, `COMPILE NOT VERIFIED`, `RUNTIME VERIFIED`, `VISUAL VERIFIED`.
+- Khi không có công cụ biên dịch Pine chính thức, phải ghi `COMPILE NOT VERIFIED`; kiểm tra tĩnh, kiểm thử mô phỏng hoặc một `plot()` ẩn không thay thế được bước biên dịch thực tế.
+- Không gọi một bản mã là “hoàn thiện/đã chạy tốt” chỉ vì qua kiểm tra tĩnh. AI-1 chỉ chuyển bản cần người dùng kiểm tra TradingView với tình trạng chưa xác minh được đánh dấu rõ.
+
+### 7.2. Checklist bắt buộc trước khi bàn giao
+1. Xác minh `//@version=6`, khai báo `indicator()` hoặc `strategy()`, ít nhất một đầu ra hợp lệ ở phạm vi toàn cục. Với chỉ báo chỉ vẽ động, có thể dùng `plot(close, display=display.none)` làm compiler anchor, nhưng vẫn phải kiểm tra việc tạo đối tượng vẽ thực tế.
+2. Rà cú pháp, xuống dòng, thụt lề, tên biến, phạm vi `plot*`, khai báo hàm, kiểu `series/simple/input/const`, `na`, kiểu dữ liệu tùy biến, tuple và cú pháp tham số.
+3. Rà `request.security()`, timeframe, lịch sử `[n]`, thời điểm xác nhận pivot và `barstate` để tránh lookahead/repaint; không coi backdating các điểm neo là tín hiệu từng tồn tại trong quá khứ.
+4. Rà `line.new`, `line.set_*`, `label`, `box`, giới hạn đối tượng, `xloc`, tọa độ, `max_bars_back`, chỉ số lịch sử, mảng rỗng/ngoài biên và `na` trước khi truy cập.
+5. Kiểm tra mọi nhánh của điều kiện timeframe; trường hợp không hỗ trợ phải không vẽ nhưng vẫn biên dịch bình thường.
+6. Kiểm tra runtime, khả năng hiển thị và điều kiện đủ để tạo đường/tín hiệu. `COMPILE PASS` không đồng nghĩa `RENDER PASS` hoặc thuật toán chính xác.
+7. Kiểm tra hồi quy: không tự xóa/nới điều kiện, không sửa thuật toán giao dịch để chữa lỗi cú pháp; diff phải tối thiểu và giải thích được.
+8. AI-4 lập báo cáo PASS / FAIL / NOT RUN cho từng mục, kèm bằng chứng thực sự có được; không giả tạo log, ảnh chụp hoặc xác nhận từ TradingView.
+
+### 7.3. Quy trình sửa lỗi TradingView
+- Khi người dùng gửi mã lỗi, ảnh hoặc thông báo Pine Editor: xác định file, dòng, mã lỗi, điều kiện tái hiện và loại lỗi (compile / runtime / render / logic).
+- Sửa nguyên nhân gốc bằng thay đổi tối thiểu; không chỉ thêm compiler anchor rồi tuyên bố đường đã vẽ đúng.
+- Sau mỗi lần sửa phải rà toàn file và kiểm tra hồi quy; không giao liên tục các bản sửa phỏng đoán từng dòng mà không phân tích sự phụ thuộc.
+- Nếu sau hai vòng sửa cùng loại lỗi vẫn tái diễn, dừng vá chắp nối; AI-1 yêu cầu AI-3 và AI-4 làm phân tích nguyên nhân độc lập, rà kiến trúc và đề xuất phương án sửa có thể kiểm chứng.
+- Lưu lỗi từng gặp vào bảng `PINE_KNOWN_ISSUES.md` khi thích hợp: lỗi, nguyên nhân, cách sửa, testcase và cách phòng tránh. Không tự sinh nhiều tài liệu chỉ để đủ thủ tục.
+
+### 7.4. Cơ chế chống lỗi tái diễn
+- Tạo tập testcase tối thiểu cho mỗi module: thiếu dữ liệu, đủ dữ liệu, timeframe không hỗ trợ, trường hợp pivot đang chờ xác nhận, không tạo được đường, thay đổi timeframe, dữ liệu realtime và giới hạn tài nguyên.
+- Ưu tiên kiểm tra tự động có thể chạy thật trong môi trường (ví dụ đối chiếu cấu trúc source hoặc test thuật toán thuần túy); phải nêu rõ giới hạn của các công cụ không chính thức.
+- Khi người dùng xác nhận kết quả biên dịch TradingView, ghi nhận trạng thái cùng phiên bản/commit tương ứng; mọi thay đổi mã sau đó làm mất hiệu lực xác nhận của phiên bản trước cho đến khi kiểm thử lại.
+
+### 7.5. Mẫu báo cáo bắt buộc của Project Manager
+- **Phiên bản / commit / file:** mã nguồn nào được đánh giá.
+- **Compilation:** VERIFIED PASS / VERIFIED FAIL / NOT VERIFIED; công cụ và bằng chứng.
+- **Runtime:** VERIFIED PASS / VERIFIED FAIL / NOT RUN.
+- **Rendering / thuật toán:** PASS / FAIL / NOT RUN, nêu timeframe và tình huống.
+- **Audit:** phát hiện còn tồn tại, ảnh hưởng, cách tái hiện.
+- **Hướng dẫn UAT TradingView:** bước tối thiểu để người dùng xác minh khi Codex không thể tự chạy TradingView.
+- Chỉ người dùng có quyền nghiệm thu cuối. Không yêu cầu họ xử lý lỗi code thay cho AI-3.
